@@ -1,5 +1,9 @@
 import { Peer } from 'peerjs';
 import './style.css';
+import markdownit from 'markdown-it';
+const md = markdownit({
+    html: false,
+})
 
 // helper functions
 function randomID() {
@@ -18,7 +22,7 @@ function createMessage(text, type = "message") {
     const element = document.createElement("span");
 
     element.className = `messages-log-${type}`;
-    element.innerText = text;
+    element.innerHTML = text.replace(/<p>/g, "<span>").replace(/<\/p>/g, "</span>");
 
     log.appendChild(element);
     element.scrollIntoView();
@@ -51,7 +55,7 @@ formatLog("name", name);
 
 // connection event handlers
 function onConnectionData(data) {
-    createMessage(`<${data.name}> ${data.text}`);
+    createMessage(`${data.name}: ${md.render(data.text)}`);
 }
 
 function onConnectionClose() {
@@ -105,8 +109,8 @@ input.addEventListener("change", () => {
     input.value = "";
 
     if (connection) {
-        connection.send({name: name, text: text});
+        connection.send({ name: name, text: text });
     }
 
-    createMessage(`<${name}> ${text}`);
+    createMessage(`${name}: ${md.render(text)}`);
 });
