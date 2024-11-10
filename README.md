@@ -1,5 +1,5 @@
 # Chatochka
-Chatochka is a simple peer-to-peer chat website that allows two people to, well, chat with each other. It is made using the classic HTML, CSS, and JavaScript trio, with the addition of [PeerJS](https://peerjs.com) for the connection between the peers.
+Chatochka is a simple peer-to-peer chat website that allows two people to, well, chat with each other. It is made using ~~the classic HTML, CSS, and JavaScript trio~~ (ported to vite by [NISZOgen](https://github.com/niszogen) :-)), with the addition of [PeerJS](https://peerjs.com) for the connection between the peers.
 
 ## Usage
 Simply go to the [official link](https://chat.bemxio.xyz), host the website yourself, or open the `index.html` file in your browser.

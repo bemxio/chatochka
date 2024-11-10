@@ -1,3 +1,6 @@
+import { Peer } from 'peerjs';
+import './style.css';
+
 // helper functions
 function randomID() {
     return Math.random().toString(16).substring(2, 8);
@@ -18,6 +21,7 @@ function createMessage(text, type = "message") {
     element.innerText = text;
 
     log.appendChild(element);
+    element.scrollIntoView();
 }
 
 // variables
