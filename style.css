@@ -18,12 +18,16 @@ body {
     overflow: auto;
 }
 
-.messages-log-message, .messages-log-system {
+.messages-log-message, .messages-log-system, .messages-log-command {
     display: block;
 }
 
 .messages-log-system {
     color: yellow;
+}
+
+.messages-log-command {
+    color: lightgray;
 }
 
 #messages-input {

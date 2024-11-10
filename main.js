@@ -4,6 +4,8 @@ import markdownit from 'markdown-it';
 const md = markdownit({
     html: false,
 })
+import { startsWith } from 'lodash';
+import DOMPurify from 'dompurify';
 
 // helper functions
 function randomID() {
@@ -34,7 +36,7 @@ const button = document.getElementById("messages-log-connect");
 const input = document.getElementById("messages-input");
 
 const id = randomID();
-const name = prompt("Enter your name:") || "Guest";
+let name = prompt("Enter your name:") || "Guest";
 
 const peer = new Peer(`chatochka-${id}`, {
     config: {
@@ -84,9 +86,7 @@ peer.on("connection", (incoming) => {
     createMessage(`A peer (ID: ${connectionID}) connected to the chat`, "system");
 });
 
-button.addEventListener("click", () => {
-    connectionID = prompt("Enter the peer's ID:");
-
+function joinPeer(connectionID) {
     if (connection) {
         connection.close();
     }
@@ -97,6 +97,22 @@ button.addEventListener("click", () => {
     connection.on("close", onConnectionClose);
 
     createMessage(`Connected to a peer (ID: ${connectionID})`, "system");
+}
+
+function changeName(newName) {
+    name = newName;
+    createMessage(`Your name is now ${DOMPurify.sanitize(name)}!`, "system");
+    document.getElementById("messages-log-name").innerText = name;
+}
+
+document.getElementById("messages-log-name").addEventListener("click", () => {
+    let newName = prompt("Enter your new name:");
+    changeName(newName);
+})
+
+button.addEventListener("click", () => {
+    connectionID = prompt("Enter the peer's ID:");
+    joinPeer(connectionID);
 });
 
 input.addEventListener("change", () => {
@@ -108,9 +124,20 @@ input.addEventListener("change", () => {
 
     input.value = "";
 
+    if(startsWith(text, "/")) {
+        if(startsWith(text, "/join")) {
+           joinPeer(text.replace("/join ", ""))
+        } else if(startsWith(text, "/name")) {
+            changeName(text.replace("/name ", ""))
+        } else {
+            createMessage("Invalid command!", "command")
+        }
+        return;
+    }
+
     if (connection) {
         connection.send({ name: name, text: text });
     }
 
-    createMessage(`${name}: ${md.render(text)}`);
+    createMessage(`${DOMPurify.sanitize(name)}: ${md.render(text)}`);
 });
