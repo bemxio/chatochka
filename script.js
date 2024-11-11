@@ -80,7 +80,7 @@ formatLog("name", name);
 
 // connection event handlers
 function onConnectionData(data) {
-    createMessage(`&lt;${data.name}&gt;: ${md.render(data.text)}`);
+    createMessage(`&lt;${DOMPurify.sanitize(data.name)}&gt;: ${md.render(data.text)}`);
 }
 
 function onConnectionClose() {
