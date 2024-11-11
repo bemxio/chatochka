@@ -18,7 +18,7 @@ body {
     overflow: auto;
 }
 
-.messages-log-message, .messages-log-system, .messages-log-command {
+.messages-log-message, .messages-log-system, .messages-log-error {
     display: block;
 }
 
@@ -26,8 +26,8 @@ body {
     color: yellow;
 }
 
-.messages-log-command {
-    color: lightgray;
+.messages-log-error {
+    color: red;
 }
 
 #messages-input {

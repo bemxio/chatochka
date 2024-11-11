@@ -1,11 +1,9 @@
-import { Peer } from 'peerjs';
-import './style.css';
-import markdownit from 'markdown-it';
-const md = markdownit({
-    html: false,
-})
-import { startsWith } from 'lodash';
-import DOMPurify from 'dompurify';
+// imports
+import { Peer } from "peerjs";
+import markdownit from "markdown-it";
+import DOMPurify from "dompurify";
+
+const md = markdownit({ linkify: true });
 
 // helper functions
 function randomID() {
@@ -24,10 +22,34 @@ function createMessage(text, type = "message") {
     const element = document.createElement("span");
 
     element.className = `messages-log-${type}`;
-    element.innerHTML = text.replace(/<p>/g, "<span>").replace(/<\/p>/g, "</span>");
+    element.innerHTML = text.replace("<p>", "").replace("</p>", "");
 
     log.appendChild(element);
     element.scrollIntoView();
+}
+
+function joinPeer(connectionID) {
+    if (connection) {
+        connection.close();
+    }
+
+    if (!connectionID.match(/^[0-9a-f]{6}$/)) {
+        createMessage("Unable to connect, invalid peer ID specified", "error"); return;
+    }
+
+    connection = peer.connect(`chatochka-${connectionID}`);
+
+    connection.on("data", onConnectionData);
+    connection.on("close", onConnectionClose);
+
+    createMessage(`Connected to a peer (ID: ${connectionID})`, "system");
+}
+
+function changeName(newName) {
+    name = DOMPurify.sanitize(newName);
+
+    createMessage(`Name changed to "${name}"`, "system");
+    formatLog("name", name);
 }
 
 // variables
@@ -47,6 +69,7 @@ const peer = new Peer(`chatochka-${id}`, {
         ]
     }
 });
+//const peer = new Peer(`chatochka-${id}`);
 
 let connection = null;
 let connectionID = "";
@@ -57,7 +80,7 @@ formatLog("name", name);
 
 // connection event handlers
 function onConnectionData(data) {
-    createMessage(`${data.name}: ${md.render(data.text)}`);
+    createMessage(`&lt;${data.name}&gt;: ${md.render(data.text)}`);
 }
 
 function onConnectionClose() {
@@ -86,33 +109,8 @@ peer.on("connection", (incoming) => {
     createMessage(`A peer (ID: ${connectionID}) connected to the chat`, "system");
 });
 
-function joinPeer(connectionID) {
-    if (connection) {
-        connection.close();
-    }
-
-    connection = peer.connect(`chatochka-${connectionID}`);
-
-    connection.on("data", onConnectionData);
-    connection.on("close", onConnectionClose);
-
-    createMessage(`Connected to a peer (ID: ${connectionID})`, "system");
-}
-
-function changeName(newName) {
-    name = newName;
-    createMessage(`Your name is now ${DOMPurify.sanitize(name)}!`, "system");
-    document.getElementById("messages-log-name").innerText = name;
-}
-
-document.getElementById("messages-log-name").addEventListener("click", () => {
-    let newName = prompt("Enter your new name:");
-    changeName(newName);
-})
-
 button.addEventListener("click", () => {
-    connectionID = prompt("Enter the peer's ID:");
-    joinPeer(connectionID);
+    joinPeer(prompt("Enter the peer's ID:"));
 });
 
 input.addEventListener("change", () => {
@@ -124,14 +122,32 @@ input.addEventListener("change", () => {
 
     input.value = "";
 
-    if(startsWith(text, "/")) {
-        if(startsWith(text, "/join")) {
-           joinPeer(text.replace("/join ", ""))
-        } else if(startsWith(text, "/name")) {
-            changeName(text.replace("/name ", ""))
-        } else {
-            createMessage("Invalid command!", "command")
+    if (text.startsWith("/")) {
+        const command = text.slice(1).split(" ");
+
+        switch (command[0]) {
+            case "join":
+                if (command.length < 2) {
+                    createMessage("Usage: /join &lt;id&gt;", "error");
+                } else {
+                    joinPeer(command[1]);
+                }
+
+                break;
+
+            case "name":
+                if (command.length < 2) {
+                    createMessage("Usage: /name &lt;name&gt;", "error");
+                } else {
+                    changeName(command[1]);
+                }
+
+                break;
+
+            default:
+                createMessage(`Command "${command[0]}" not found`, "error"); break;
         }
+
         return;
     }
 
@@ -139,5 +155,5 @@ input.addEventListener("change", () => {
         connection.send({ name: name, text: text });
     }
 
-    createMessage(`${DOMPurify.sanitize(name)}: ${md.render(text)}`);
+    createMessage(`&lt;${name}&gt;: ${md.render(text)}`);
 });
