@@ -29,21 +29,36 @@ function createMessage(text, type = "message") {
 }
 
 // commands
-function joinPeer(connectionID) {
+function connectToPeer(peerID) {
     if (connection) {
         connection.close();
     }
 
-    if (!connectionID.match(/^[0-9a-f]{6}$/)) {
+    if (!peerID.match(/^[0-9a-f]{6}$/)) {
         createMessage("Unable to connect, invalid peer ID specified", "error"); return;
     }
 
-    connection = peer.connect(`chatochka-${connectionID}`);
+    connection = peer.connect(`chatochka-${peerID}`);
+    connectionID = peerID;
 
     connection.on("data", onConnectionData);
     connection.on("close", onConnectionClose);
 
-    createMessage(`Connected to a peer (ID: ${connectionID})`, "system");
+    createMessage(`Connected to a peer (ID: ${peerID})`, "system");
+}
+
+function disconnectFromPeer() {
+    if (!connection) {
+        createMessage("Unable to disconnect, no active connection found", "error"); return;
+    }
+
+    let peerID = connectionID;
+    connectionID = "";
+
+    connection.close();
+    connection = null;
+
+    createMessage(`Disconnected from a peer (ID: ${peerID})`, "system");
 }
 
 function changeName(newName) {
@@ -53,7 +68,7 @@ function changeName(newName) {
     formatLog("name", name);
 }
 
-// variables
+// constants
 const log = document.getElementById("messages-log");
 const button = document.getElementById("messages-log-connect");
 const input = document.getElementById("messages-input");
@@ -77,6 +92,10 @@ function onConnectionData(data) {
 }
 
 function onConnectionClose() {
+    if (!connectionID) {
+        return;
+    }
+
     createMessage(`A peer (ID: ${connectionID}) disconnected from the chat`, "system");
 
     connection = null;
@@ -103,7 +122,7 @@ peer.on("connection", (incoming) => {
 });
 
 button.addEventListener("click", () => {
-    joinPeer(prompt("Enter the peer's ID:"));
+    connectToPeer(prompt("Enter the peer's ID:"));
 });
 
 input.addEventListener("change", () => {
@@ -119,14 +138,17 @@ input.addEventListener("change", () => {
         const command = text.slice(1).split(" ");
 
         switch (command[0]) {
-            case "join":
+            case "connect":
                 if (command.length < 2) {
-                    createMessage("Usage: /join &lt;id&gt;", "error");
+                    createMessage("Usage: /connect &lt;id&gt;", "error");
                 } else {
-                    joinPeer(command[1]);
+                    connectToPeer(command[1]);
                 }
 
                 break;
+
+            case "disconnect":
+                disconnectFromPeer(); break;
 
             case "name":
                 if (command.length < 2) {
