@@ -44,7 +44,9 @@ function connectToPeer(peerID) {
     connection.on("data", onConnectionData);
     connection.on("close", onConnectionClose);
 
-    createMessage(`Connected to a peer (ID: ${peerID})`, "system");
+    connection.on("open", () => {
+        createMessage(`Connected to a peer (ID: ${peerID})`, "system");
+    });
 }
 
 function disconnectFromPeer() {
@@ -88,7 +90,11 @@ formatLog("name", name);
 
 // connection event handlers
 function onConnectionData(data) {
-    createMessage(`&lt;${DOMPurify.sanitize(data.name)}&gt;: ${md.render(data.text)}`);
+    if ("error" in data) {
+        createMessage(data.error, "error");
+    } else {
+        createMessage(`&lt;${DOMPurify.sanitize(data.name)}&gt;: ${md.render(data.text)}`);
+    }
 }
 
 function onConnectionClose() {
@@ -105,10 +111,15 @@ function onConnectionClose() {
 // other event handlers
 peer.on("connection", (incoming) => {
     if (!incoming.peer.startsWith("chatochka-")) {
-        return;
+        incoming.close(); return;
     }
 
     if (connection) {
+        incoming.on("open", () => {
+            incoming.send({ error: "Unable to connect, another peer is already connected" });
+            incoming.close();
+        });
+
         return;
     }
 
