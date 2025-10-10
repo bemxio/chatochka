@@ -28,6 +28,7 @@ function createMessage(text, type = "message") {
     element.scrollIntoView();
 }
 
+// commands
 function joinPeer(connectionID) {
     if (connection) {
         connection.close();
@@ -58,21 +59,13 @@ const button = document.getElementById("messages-log-connect");
 const input = document.getElementById("messages-input");
 
 const id = randomID();
-let name = prompt("Enter your name:") || "Guest";
+const peer = new Peer(`chatochka-${id}`);
 
-const peer = new Peer(`chatochka-${id}`, {
-    config: {
-        iceServers: [
-            { urls: "stun:stun.relay.metered.ca:80" },
-            { urls: "turn:global.relay.metered.ca:443", username: "99970a8195f9abaac29787b8", credential: "Wh0+MvctX+HfCjsr" },
-            { urls: "turns:global.relay.metered.ca:443?transport=tcp", username: "99970a8195f9abaac29787b8", credential: "Wh0+MvctX+HfCjsr" }
-        ]
-    }
-});
-//const peer = new Peer(`chatochka-${id}`);
-
+// variables
 let connection = null;
 let connectionID = "";
+
+let name = prompt("Enter your name:") || "Guest";
 
 // format the log
 formatLog("id", id);
