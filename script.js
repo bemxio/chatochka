@@ -139,6 +139,7 @@ input.addEventListener("change", () => {
 
         switch (command[0]) {
             case "connect":
+            case "join":
                 if (command.length < 2) {
                     createMessage("Usage: /connect &lt;id&gt;", "error");
                 } else {
@@ -148,6 +149,7 @@ input.addEventListener("change", () => {
                 break;
 
             case "disconnect":
+            case "leave":
                 disconnectFromPeer(); break;
 
             case "name":
