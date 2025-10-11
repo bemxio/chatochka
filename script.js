@@ -41,10 +41,10 @@ function connectToPeer(peerID) {
     connection = peer.connect(`chatochka-${peerID}`);
     connectionID = peerID;
 
-    connection.on("data", onConnectionData);
-    connection.on("close", onConnectionClose);
-
     connection.on("open", () => {
+        connection.on("data", onConnectionData);
+        connection.on("close", onConnectionClose);
+
         createMessage(`Connected to a peer (ID: ${peerID})`, "system");
     });
 }
@@ -130,10 +130,12 @@ peer.on("connection", (incoming) => {
     connection = incoming;
     connectionID = connection.peer.slice(10);
 
-    connection.on("data", onConnectionData);
-    connection.on("close", onConnectionClose);
+    connection.on("open", () => {
+        connection.on("data", onConnectionData);
+        connection.on("close", onConnectionClose);
 
-    createMessage(`A peer (ID: ${connectionID}) connected to the chat`, "system");
+        createMessage(`A peer (ID: ${connectionID}) connected to the chat`, "system");
+    });
 });
 
 button.addEventListener("click", () => {
