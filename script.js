@@ -76,7 +76,11 @@ const button = document.getElementById("messages-log-connect");
 const input = document.getElementById("messages-input");
 
 const id = randomID();
-const peer = new Peer(`chatochka-${id}`, { debug: 3 });
+const peer = new Peer(`chatochka-${id}`, {
+    host: "frog.bemxio.xyz",
+    secure: true,
+    debug: 3
+});
 
 // variables
 let connection = null;
