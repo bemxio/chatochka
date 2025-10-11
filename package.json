@@ -1,7 +1,7 @@
 {
   "name": "chatochka",
   "private": true,
-  "version": "r29.657c0ee",
+  "version": "r35.b16ab86",
   "type": "module",
   "scripts": {
     "dev": "vite",
