@@ -34,6 +34,10 @@ function connectToPeer(peerID) {
         connection.close();
     }
 
+    if (peerID === id) {
+        createMessage("Unable to connect, cannot establish a connection with self", "error"); return;
+    }
+
     if (!peerID.match(/^[0-9a-f]{6}$/)) {
         createMessage("Unable to connect, invalid peer ID specified", "error"); return;
     }
