@@ -18,11 +18,11 @@ function formatLog(key, value) {
     }
 }
 
-function createMessage(text, type = "message") {
+function createMessage(content, type = "message") {
     const element = document.createElement("span");
 
     element.className = `messages-log-${type}`;
-    element.innerHTML = text.replace("<p>", "").replace("</p>", "");
+    element.innerHTML = content.replace("<p>", "").replace("</p>", "");
 
     log.appendChild(element);
     element.scrollIntoView();
@@ -56,7 +56,7 @@ function disconnectFromPeer() {
     }
 
     const connection = connections[0];
-    const peerID = connection.peer.slice(10);
+    //const peerID = connection.peer.slice(10);
 
     connection.close();
     connections.pop();
@@ -65,7 +65,7 @@ function disconnectFromPeer() {
         isHost = false;
     }
 
-    createMessage(`Disconnected from a peer (ID: ${peerID})`, "system");
+    //createMessage(`Disconnected from a peer (ID: ${peerID})`, "system");
 }
 
 /*
@@ -100,17 +100,20 @@ formatLog("name", name);
 
 // connection event handlers
 function onConnectionData(data) {
-    if ("error" in data) {
-        createMessage(data.error, "error"); return;
-    }
+    switch (data.type) {
+        case 0:
+            if (isHost) {
+                for (const connection of connections) {
+                    connection.send(data);
+                }
+            }
 
-    if (isHost) {
-        for (const connection of connections) {
-            connection.send(data);
-        }
+            createMessage(`&lt;${DOMPurify.sanitize(data.author)}&gt;: ${md.render(data.content)}`); break;
+        case 1:
+            createMessage(data.content, "system"); break;
+        case 2:
+            createMessage(data.content, "error"); break;
     }
-
-    createMessage(`&lt;${DOMPurify.sanitize(data.name)}&gt;: ${md.render(data.text)}`);
 }
 
 function onConnectionClose() {
@@ -120,8 +123,14 @@ function onConnectionClose() {
     connection.close();
     connections.splice(connections.indexOf(connection), 1);
 
-    if (isHost && connections.length === 0) {
-        isHost = false;
+    if (isHost) {
+        if (connections.length === 0) {
+            isHost = false;
+        } else {
+            for (const connection of connections) {
+                connection.send({ type: 1, content: `A peer (ID: ${peerID}) disconnected from the chat` });
+            }
+        }
     }
 
     createMessage(`A peer (ID: ${peerID}) disconnected from the chat`, "system");
@@ -135,7 +144,7 @@ peer.on("connection", (connection) => {
 
     if (!isHost && connections.length === 1) {
         connection.on("open", () => {
-            connection.send({ error: "Unable to connect, another peer is already connected" });
+            connection.send({ type: 2, content: "Unable to connect, another peer is already connected" });
             connection.close();
         });
 
@@ -150,6 +159,12 @@ peer.on("connection", (connection) => {
         connection.on("data", onConnectionData);
         connection.on("close", onConnectionClose);
 
+        if (isHost) {
+            for (const connection of connections) {
+                connection.send({ type: 1, content: `A peer (ID: ${peerID}) connected to the chat` });
+            }
+        }
+
         createMessage(`A peer (ID: ${peerID}) connected to the chat`, "system");
     });
 
@@ -161,23 +176,23 @@ button.addEventListener("click", () => {
 });
 
 input.addEventListener("change", () => {
-    const text = input.value;
+    const content = input.value;
 
-    if (!text) {
+    if (!content) {
         return;
     }
 
     input.value = "";
 
-    if (text.startsWith("/")) {
-        const command = text.slice(1).split(" ");
+    if (content.startsWith("/")) {
+        const command = content.slice(1).split(" ");
 
         switch (command[0]) {
             case "connect":
             case "join":
                 if (command.length < 2) {
                     createMessage("Usage: /connect &lt;id&gt;", "error"); break;
-                } 
+                }
 
                 connectToPeer(command[1]); break;
 
@@ -204,10 +219,10 @@ input.addEventListener("change", () => {
     if (connections.length === 0) return;
 
     for (const connection of connections) {
-        connection.send({ name: name, text: text });
+        connection.send({ type: 0, author: name, content: content });
     }
 
     if (isHost) {
-        createMessage(`&lt;${name}&gt;: ${md.render(text)}`);
+        createMessage(`&lt;${name}&gt;: ${md.render(content)}`);
     }
 });
