@@ -30,20 +30,13 @@ function createMessage(text, type = "message") {
 
 // commands
 function connectToPeer(peerID) {
-    if (connection) {
-        connection.close();
-    }
-
     if (peerID === id) {
         createMessage("Unable to connect, cannot establish a connection with self", "error"); return;
-    }
-
-    if (!peerID.match(/^[0-9a-f]{6}$/)) {
+    } else if (!peerID.match(/^[0-9a-f]{6}$/)) {
         createMessage("Unable to connect, invalid peer ID specified", "error"); return;
     }
 
-    connection = peer.connect(`chatochka-${peerID}`);
-    connectionID = peerID;
+    const connection = peer.connect(`chatochka-${peerID}`);
 
     connection.on("open", () => {
         connection.on("data", onConnectionData);
@@ -51,46 +44,55 @@ function connectToPeer(peerID) {
 
         createMessage(`Connected to a peer (ID: ${peerID})`, "system");
     });
+
+    connections.push(connection);
 }
 
 function disconnectFromPeer() {
-    if (!connection) {
-        createMessage("Unable to disconnect, no active connection found", "error"); return;
+    if (connections.length === 0) {
+        createMessage("Unable to disconnect, no active connections found", "error"); return;
+    } else if (connections.length > 1) {
+        createMessage("Unable to disconnect, multiple active connections found", "error"); return;
     }
 
-    let peerID = connectionID;
-    connectionID = "";
+    const connection = connections[0];
+    const peerID = connection.peer.slice(10);
 
     connection.close();
-    connection = null;
+    connections.pop();
+
+    if (isHost) {
+        isHost = false;
+    }
 
     createMessage(`Disconnected from a peer (ID: ${peerID})`, "system");
 }
 
+/*
 function changeName(newName) {
     name = DOMPurify.sanitize(newName);
 
     createMessage(`Name changed to "${name}"`, "system");
     formatLog("name", name);
 }
+*/
 
-// constants
+// constants and variables
 const log = document.getElementById("messages-log");
 const button = document.getElementById("messages-log-connect");
 const input = document.getElementById("messages-input");
 
 const id = randomID();
+const name = prompt("Enter your name:") || "Guest";
+
 const peer = new Peer(`chatochka-${id}`, {
     host: "frog.bemxio.xyz",
     secure: true,
     debug: 3
 });
 
-// variables
-let connection = null;
-let connectionID = "";
-
-let name = prompt("Enter your name:") || "Guest";
+const connections = [];
+let isHost = false;
 
 // format the log
 formatLog("id", id);
@@ -99,47 +101,59 @@ formatLog("name", name);
 // connection event handlers
 function onConnectionData(data) {
     if ("error" in data) {
-        createMessage(data.error, "error");
-    } else {
-        createMessage(`&lt;${DOMPurify.sanitize(data.name)}&gt;: ${md.render(data.text)}`);
+        createMessage(data.error, "error"); return;
     }
+
+    if (isHost) {
+        for (const connection of connections) {
+            connection.send(data);
+        }
+    }
+
+    createMessage(`&lt;${DOMPurify.sanitize(data.name)}&gt;: ${md.render(data.text)}`);
 }
 
 function onConnectionClose() {
-    if (!connectionID) {
-        return;
+    const connection = this;
+    const peerID = connection.peer.slice(10);
+
+    connection.close();
+    connections.splice(connections.indexOf(connection), 1);
+
+    if (isHost && connections.length === 0) {
+        isHost = false;
     }
 
-    createMessage(`A peer (ID: ${connectionID}) disconnected from the chat`, "system");
-
-    connection = null;
-    connectionID = "";
+    createMessage(`A peer (ID: ${peerID}) disconnected from the chat`, "system");
 }
 
 // other event handlers
-peer.on("connection", (incoming) => {
-    if (!incoming.peer.startsWith("chatochka-")) {
-        incoming.close(); return;
+peer.on("connection", (connection) => {
+    if (!connection.peer.startsWith("chatochka-")) {
+        connection.close(); return;
     }
 
-    if (connection) {
-        incoming.on("open", () => {
-            incoming.send({ error: "Unable to connect, another peer is already connected" });
-            incoming.close();
+    if (!isHost && connections.length === 1) {
+        connection.on("open", () => {
+            connection.send({ error: "Unable to connect, another peer is already connected" });
+            connection.close();
         });
 
         return;
     }
 
-    connection = incoming;
-    connectionID = connection.peer.slice(10);
+    isHost = true;
 
     connection.on("open", () => {
+        const peerID = connection.peer.slice(10);
+
         connection.on("data", onConnectionData);
         connection.on("close", onConnectionClose);
 
-        createMessage(`A peer (ID: ${connectionID}) connected to the chat`, "system");
+        createMessage(`A peer (ID: ${peerID}) connected to the chat`, "system");
     });
+
+    connections.push(connection);
 });
 
 button.addEventListener("click", () => {
@@ -162,25 +176,23 @@ input.addEventListener("change", () => {
             case "connect":
             case "join":
                 if (command.length < 2) {
-                    createMessage("Usage: /connect &lt;id&gt;", "error");
-                } else {
-                    connectToPeer(command[1]);
-                }
+                    createMessage("Usage: /connect &lt;id&gt;", "error"); break;
+                } 
 
-                break;
+                connectToPeer(command[1]); break;
 
             case "disconnect":
             case "leave":
                 disconnectFromPeer(); break;
 
+            /*
             case "name":
                 if (command.length < 2) {
-                    createMessage("Usage: /name &lt;name&gt;", "error");
-                } else {
-                    changeName(command[1]);
+                    createMessage("Usage: /name &lt;name&gt;", "error"); break;
                 }
 
-                break;
+                changeName(command[1]); break;
+            */
 
             default:
                 createMessage(`Command "${command[0]}" not found`, "error"); break;
@@ -189,9 +201,13 @@ input.addEventListener("change", () => {
         return;
     }
 
-    if (connection) {
+    if (connections.length === 0) return;
+
+    for (const connection of connections) {
         connection.send({ name: name, text: text });
     }
 
-    createMessage(`&lt;${name}&gt;: ${md.render(text)}`);
+    if (isHost) {
+        createMessage(`&lt;${name}&gt;: ${md.render(text)}`);
+    }
 });
