@@ -83,7 +83,7 @@ const button = document.getElementById("messages-log-connect");
 const input = document.getElementById("messages-input");
 
 const id = randomID();
-const name = prompt("Enter your name:") || "Guest";
+const name = DOMPurify.sanitize(prompt("Enter your name:")) || "Guest";
 
 const peer = new Peer(`chatochka-${id}`, {
     host: "frog.bemxio.xyz",
@@ -108,7 +108,7 @@ function onConnectionData(data) {
                 }
             }
 
-            createMessage(`&lt;${DOMPurify.sanitize(data.author)}&gt;: ${md.render(data.content)}`); break;
+            createMessage(`&lt;${data.author}&gt;: ${md.render(data.content)}`); break;
         case 1:
             createMessage(data.content, "system"); break;
         case 2:
