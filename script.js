@@ -13,9 +13,8 @@ function randomID() {
 function formatLog(key, value) {
     const element = document.getElementById(`messages-log-${key}`);
 
-    if (element) {
+    if (element)
         element.innerText = value;
-    }
 }
 
 function createMessage(content, type = "message") {
@@ -61,9 +60,8 @@ function disconnectFromPeer() {
     connection.close();
     connections.pop();
 
-    if (isHost) {
+    if (isHost)
         isHost = false;
-    }
 
     //createMessage(`Disconnected from a peer (ID: ${peerID})`, "system");
 }
@@ -86,8 +84,8 @@ const id = randomID();
 const name = DOMPurify.sanitize(prompt("Enter your name:")) || "Guest";
 
 const peer = new Peer(`chatochka-${id}`, {
-    host: "frog.bemxio.xyz",
-    secure: true,
+//  host: "frog.bemxio.xyz",
+//  secure: true,
     debug: 3
 });
 
@@ -103,9 +101,8 @@ function onConnectionData(data) {
     switch (data.type) {
         case 0:
             if (isHost) {
-                for (const connection of connections) {
+                for (const connection of connections)
                     connection.send(data);
-                }
             }
 
             createMessage(`&lt;${data.author}&gt;: ${md.render(data.content)}`); break;
@@ -127,9 +124,8 @@ function onConnectionClose() {
         if (connections.length === 0) {
             isHost = false;
         } else {
-            for (const connection of connections) {
+            for (const connection of connections)
                 connection.send({ type: 1, content: `A peer (ID: ${peerID}) disconnected from the chat` });
-            }
         }
     }
 
@@ -160,9 +156,8 @@ peer.on("connection", (connection) => {
         connection.on("close", onConnectionClose);
 
         if (isHost) {
-            for (const connection of connections) {
+            for (const connection of connections)
                 connection.send({ type: 1, content: `A peer (ID: ${peerID}) connected to the chat` });
-            }
         }
 
         createMessage(`A peer (ID: ${peerID}) connected to the chat`, "system");
@@ -178,9 +173,8 @@ button.addEventListener("click", () => {
 input.addEventListener("change", () => {
     const content = input.value;
 
-    if (!content) {
+    if (!content)
         return;
-    }
 
     input.value = "";
 
@@ -218,11 +212,9 @@ input.addEventListener("change", () => {
 
     if (connections.length === 0) return;
 
-    for (const connection of connections) {
+    for (const connection of connections)
         connection.send({ type: 0, author: name, content: content });
-    }
 
-    if (isHost) {
+    if (isHost)
         createMessage(`&lt;${name}&gt;: ${md.render(content)}`);
-    }
 });
