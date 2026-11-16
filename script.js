@@ -84,8 +84,8 @@ const id = randomID();
 const name = DOMPurify.sanitize(prompt("Enter your name:")) || "Guest";
 
 const peer = new Peer(`chatochka-${id}`, {
-//  host: "frog.bemxio.xyz",
-//  secure: true,
+    host: "frog.bemxio.xyz",
+    secure: true,
     debug: 3
 });
 
